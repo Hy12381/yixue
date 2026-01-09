@@ -1,3 +1,4 @@
+import os
 import joblib
 import numpy as np
 import pandas as pd
@@ -7,9 +8,22 @@ import matplotlib.pyplot as plt
 from delirium_web.features import WEB_BINARY_FEATURES, WEB_FEATURE_LABELS_EN
 
 
+def _default_model_path():
+    here = os.path.abspath(os.path.dirname(__file__))
+    candidates = [
+        os.path.join(here, "delirium_web_model.joblib"),
+        os.path.join(here, "新建文件夹", "delirium_web_model.joblib"),
+    ]
+    for p in candidates:
+        if os.path.exists(p):
+            return p
+    return candidates[0]
+
+
 @st.cache_resource
 def load_model():
-    bundle = joblib.load("delirium_web_model.joblib")
+    model_path = os.environ.get("MODEL_PATH", _default_model_path())
+    bundle = joblib.load(model_path)
     model = bundle["model"]
     feature_names = bundle["feature_names"]
     labels = bundle.get("labels") or {k: WEB_FEATURE_LABELS_EN.get(k, k) for k in feature_names}
@@ -57,9 +71,13 @@ def make_force_figure(*, model, feature_names, labels, x_input, proba):
 
     seq = [base_log_odds]
     cur = base_log_odds
-    for v in shap_vals:
-        cur = cur + float(v)
-        seq.append(cur)
+    segments = []
+    for name, v, xi in zip(names, shap_vals, x):
+        start = cur
+        end = cur + float(v)
+        seq.append(end)
+        segments.append((name, float(v), float(xi), start, end))
+        cur = end
 
     min_x = min(seq)
     max_x = max(seq)
@@ -96,20 +114,24 @@ def make_force_figure(*, model, feature_names, labels, x_input, proba):
         pts_y = [y_bot, y_bot, y_mid, y_top, y_top]
         ax.fill(pts_x, pts_y, color=color, edgecolor="#111111", linewidth=0.8)
 
-    cur = base_log_odds
-    for name, v, xi in zip(names, shap_vals, x):
-        nxt = cur + float(v)
+    for name, v, xi, start, end in segments:
         color = "#f2c200" if v >= 0 else "#7a2f70"
-        arrow(cur, nxt, color)
+        arrow(start, end, color)
+
+    top_k = 4
+    segments_sorted = sorted(segments, key=lambda s: abs(s[1]), reverse=True)[:top_k]
+    label_levels = np.linspace(y0 + h * 0.7, 0.95, num=len(segments_sorted))
+    for (name, v, xi, start, end), ly in zip(segments_sorted, label_levels):
+        mid_x = 0.5 * (start + end)
+        ax.vlines(mid_x, y0 + h / 2, ly, colors="#555555", linestyles="dashed", linewidth=0.7)
         ax.text(
-            (cur + nxt) / 2,
-            y0 + (h / 2) + 0.06,
+            mid_x,
+            ly,
             f"{name}={xi:g}",
             ha="center",
             va="bottom",
             fontsize=7,
         )
-        cur = nxt
 
     ax.axvline(base_log_odds, color="#333333", linewidth=1.0, alpha=0.7)
     ax.axvline(final_log_odds, color="#111111", linewidth=1.2)
