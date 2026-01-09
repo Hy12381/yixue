@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="mb-4">
+    <div class="h3 fw-semibold mb-1">ICU Delirium Risk Predictor</div>
+    <div class="text-muted">Enter inputs and click Predict. Binary variables: 0 = No, 1 = Yes.</div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-12 col-lg-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0">
+          <div class="fw-semibold">New Observation</div>
+          <div class="text-muted small">7-variable logistic regression</div>
+        </div>
+        <div class="card-body">
+          <form method="post" class="row g-3">
+            {% for f in fields %}
+              <div class="col-12">
+                <label class="form-label small fw-semibold">{{ f.label }}</label>
+                {% if f.is_binary %}
+                  <select class="form-select form-select-sm" name="{{ f.name }}" required>
+                    <option value="" {% if f.value == "" %}selected{% endif %}>Select</option>
+                    <option value="0" {% if f.value == "0" %}selected{% endif %}>0 - No</option>
+                    <option value="1" {% if f.value == "1" %}selected{% endif %}>1 - Yes</option>
+                  </select>
+                {% else %}
+                  <input
+                    class="form-control form-control-sm"
+                    type="number"
+                    name="{{ f.name }}"
+                    value="{{ f.value }}"
+                    step="0.01"
+                    required
+                  />
+                {% endif %}
+              </div>
+            {% endfor %}
+
+            <div class="col-12 d-grid gap-2">
+              <button class="btn btn-primary" type="submit">Predict</button>
+              <a class="btn btn-outline-secondary" href="/">Reset</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-8">
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-0">
+          <div class="fw-semibold">About the model</div>
+        </div>
+        <div class="card-body">
+          <div class="text-muted mb-2">
+            The model outputs a delirium risk probability using a logistic regression formula.
+          </div>
+          <div class="app-code">
+            p = sigmoid(b0 + Σ bi·xi)
+          </div>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0">
+          <div class="fw-semibold">Prediction</div>
+        </div>
+        <div class="card-body">
+          {% if error %}
+            <div class="alert alert-danger mb-4">
+              {{ error }}
+            </div>
+          {% endif %}
+
+          {% if result is not none %}
+            <div class="d-flex align-items-end justify-content-between flex-wrap gap-2 mb-2">
+              <div>
+                <div class="text-muted small">Predicted probability</div>
+                <div class="h4 fw-semibold mb-0">Delirium during ICU stay</div>
+              </div>
+              <div class="display-6 fw-bold">{{ (result * 100) | round(1) }}%</div>
+            </div>
+            <div class="progress mb-4" style="height: 10px;">
+              <div class="progress-bar" role="progressbar" style="width: {{ (result * 100) | round(1) }}%;"></div>
+            </div>
+
+            {% if plot_png %}
+              <div class="mb-2 fw-semibold">Explanation</div>
+              <div class="text-muted small mb-2">Contributions are shown on the log-odds scale.</div>
+              <div class="plot-area">
+                <div class="plot-wrap">
+                  <img class="img-fluid" src="data:image/png;base64,{{ plot_png }}" alt="Contribution plot" />
+                </div>
+                {% if force_png %}
+                  <div class="force-float">
+                    <div class="plot-wrap">
+                      <img class="img-fluid" src="data:image/png;base64,{{ force_png }}" alt="Force plot" />
+                    </div>
+                  </div>
+                {% endif %}
+              </div>
+            {% endif %}
+          {% else %}
+            <div class="text-muted">No prediction yet.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

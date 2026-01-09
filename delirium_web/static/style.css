@@ -1,0 +1,54 @@
+.app-bg {
+  min-height: 100vh;
+  background: #f6f6f6;
+}
+
+.btn-primary {
+  background-color: #111111;
+  border-color: #111111;
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+  background-color: #000000;
+  border-color: #000000;
+}
+
+.progress-bar {
+  background-color: #111111;
+}
+
+.app-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  background: #f2f2f2;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: #111111;
+}
+
+.plot-wrap {
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.plot-area {
+  position: relative;
+}
+
+.force-float {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: min(420px, 92%);
+}
+
+@media (max-width: 991.98px) {
+  .force-float {
+    position: static;
+    width: 100%;
+    margin-top: 12px;
+  }
+}
